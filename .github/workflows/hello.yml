@@ -5,23 +5,55 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  # Permite rodar o workflow manualmente na aba Actions
+  workflow_dispatch:
+
+# Permissões globais para o GITHUB_TOKEN para permitir o deploy
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Garante apenas um deploy simultâneo por vez
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  Compilar:
-
+  # Primeiro Job: Compilação e testes
+  compilar:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Fazer o git clone
-      uses: actions/checkout@v4
-    
+      - name: Fazer o git clone
+        uses: actions/checkout@v4
 
-    - name: Executando primeiro comando
-      run: echo "amo DEVOPS ;)"
+      - name: Executando primeiro comando
+        run: echo "Amo DEVOPS :)"
 
-    - name: Executando dois ou mais comandos
-      run: |
-        ls -l
-        echo "fim do processo"
-      
-      
+      - name: Executando dois ou mais comandos
+        run: |
+          ls -l
+          echo "fim do processo"
+
+  # Segundo Job: Deploy (só roda se o 'compilar' passar)
+  deploy:
+    needs: compilar
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
